@@ -8,7 +8,6 @@ export interface IUser {
     bio?: string;
     points?: number;
     createdAt?: Timestamp;
-    updatedAt?: Timestamp;
 }
 
 export interface CreateUserInput {

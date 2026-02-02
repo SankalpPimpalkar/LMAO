@@ -13,6 +13,7 @@ import {
     arrayRemove,
     Timestamp,
     runTransaction,
+    DocumentReference,
 } from "firebase/firestore";
 
 import {
@@ -20,6 +21,8 @@ import {
     CreateCaptionInput,
     ICaptionVote,
 } from "@/types/caption.types";
+import { IBattle } from "@/types/battle.types";
+import { IUser } from "@/types/auth.types";
 
 export class CaptionService {
     static #collectionRef = collection(db, "captions");
@@ -80,7 +83,7 @@ export class CaptionService {
     }
 
     static async getCaptionsByBattle(
-        battleRef: any
+        battleRef: DocumentReference<IBattle>
     ): Promise<ICaption[]> {
         const q = query(
             this.#collectionRef,
@@ -96,7 +99,7 @@ export class CaptionService {
 
     static async voteCaption(
         captionId: string,
-        userRef: any
+        userRef: DocumentReference<IUser>
     ): Promise<void> {
         const captionRef = doc(db, "captions", captionId);
 
@@ -126,22 +129,20 @@ export class CaptionService {
 
     static async unvoteCaption(
         captionId: string,
-        userRef: any
+        userRef: DocumentReference<IUser>
     ): Promise<void> {
         const captionRef = doc(db, "captions", captionId);
 
-        const snapshot = await getDoc(captionRef);
-        if (!snapshot.exists()) return;
+        await runTransaction(db, async (tx) => {
+            const snapshot = await tx.get(captionRef);
+            if (!snapshot.exists()) return;
 
-        const data = snapshot.data() as ICaption;
-        const vote = data.votes.find(
-            (v) => v.user.path === userRef.path
-        );
+            const data = snapshot.data() as ICaption;
+            const updatedVotes = data.votes.filter(
+                (v) => v.user.path !== userRef.path
+            );
 
-        if (!vote) return;
-
-        await updateDoc(captionRef, {
-            votes: arrayRemove(vote),
+            tx.update(captionRef, { votes: updatedVotes });
         });
     }
 }

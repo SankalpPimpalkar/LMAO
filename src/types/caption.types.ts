@@ -17,7 +17,6 @@ export interface ICaption {
     author: DocumentReference<IUser>;
     votes: ICaptionVote[];
     createdAt?: Timestamp;
-    updatedAt?: Timestamp;
 }
 
 export interface CreateCaptionInput {

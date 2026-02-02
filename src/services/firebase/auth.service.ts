@@ -30,6 +30,11 @@ export class AuthService {
 
     static async #createUser(data: CreateUserInput): Promise<IUser | null> {
         const userRef = doc(db, "users", data.uid);
+        const existingUser = await getDoc(userRef);
+
+        if (existingUser.exists()) {
+            return this.#getUser(data.uid);
+        }
 
         const payload: IUser = {
             name: data.name,
@@ -39,7 +44,7 @@ export class AuthService {
             createdAt: Timestamp.now()
         };
 
-        await setDoc(userRef, payload, { merge: true });
+        await setDoc(userRef, payload);
         return await this.#getUser(data.uid);
     }
 
