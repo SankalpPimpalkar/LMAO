@@ -113,7 +113,7 @@ export default function BattlePage() {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-black">
-            <div className="w-full max-w-4xl py-6 px-4">
+            <div className="w-full max-w-4xl py-6 px-0 md:px-4">
                 <BattleView battle={battle} />
 
                 <div className="bg-zinc-950 border border-zinc-800 rounded-sm p-4">

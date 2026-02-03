@@ -102,7 +102,7 @@ export default function CreateBattle() {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-black">
-            <div className="w-full max-w-3xl py-8 px-4 flex flex-col gap-6">
+            <div className="w-full max-w-3xl py-8 px-0 md:px-4 flex flex-col gap-6">
 
                 {/* Header with Preview Toggle */}
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-4">

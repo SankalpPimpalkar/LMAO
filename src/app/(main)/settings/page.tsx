@@ -123,7 +123,7 @@ export default function SettingsPage() {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-black">
-            <div className="w-full py-6 px-4 flex flex-col gap-6">
+            <div className="w-full py-6 px-0 md:px-4 flex flex-col gap-6">
 
                 <h1 className="text-xl font-medium text-zinc-100 pb-2 border-b border-zinc-800">User Settings</h1>
 

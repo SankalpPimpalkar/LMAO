@@ -78,9 +78,9 @@ export default function Home() {
 
   return (
     <div className="flex justify-center w-full bg-black min-h-screen">
-      <div className="w-full max-w-3xl py-4 px-4 md:px-0 flex flex-col gap-4">
+      <div className="w-full max-w-3xl py-4 px-0 flex flex-col gap-4">
         {/* Feed Header / Filter Bar */}
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2 -mx-1 px-1">
+        <div className="flex items-center gap-2 mb-0 overflow-x-auto whitespace-nowrap scrollbar-hide pb-0 px-3">
           <Button variant="ghost" size="sm" className="h-auto py-1.5 px-5 flex-shrink-0 rounded-full bg-zinc-100 text-zinc-900 font-bold text-xs hover:bg-white hover:text-black">Best</Button>
           <Button variant="outline" size="sm" className="h-auto py-1.5 px-5 flex-shrink-0 rounded-full text-zinc-500 font-bold text-xs hover:bg-zinc-900 hover:text-zinc-300 border-zinc-800 bg-black/50">Hot</Button>
           <Button variant="outline" size="sm" className="h-auto py-1.5 px-5 flex-shrink-0 rounded-full text-zinc-500 font-bold text-xs hover:bg-zinc-900 hover:text-zinc-300 border-zinc-800 bg-black/50">New</Button>

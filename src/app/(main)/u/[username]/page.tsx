@@ -113,7 +113,7 @@ export default function UserProfile() {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-black">
-            <div className="w-full py-6 px-4 flex flex-col gap-4">
+            <div className="w-full py-6 px-0 md:px-4 flex flex-col gap-4">
 
                 {/* Profile Header */}
                 <div className="bg-zinc-950 border border-zinc-800 rounded-md p-6 flex flex-col md:flex-row items-start md:items-center gap-6">

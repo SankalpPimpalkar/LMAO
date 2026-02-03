@@ -16,7 +16,7 @@ export default function LeaderboardPage() {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-black">
-            <div className="w-full py-6 px-4 flex flex-col gap-6">
+            <div className="w-full py-6 px-0 md:px-4 flex flex-col gap-6">
 
                 <div className="flex items-center gap-2 border-b border-zinc-800 pb-4">
                     <Trophy className="h-6 w-6 text-yellow-500" />
