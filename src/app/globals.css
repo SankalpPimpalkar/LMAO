@@ -1,4 +1,7 @@
 @import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --default, black --prefersdark, cupcake;
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-zinc-50 text-sm tracking-tight antialiased;
+  }
 }
