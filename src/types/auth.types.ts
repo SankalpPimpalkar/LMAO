@@ -3,6 +3,7 @@ import { Timestamp } from "firebase/firestore";
 export interface IUser {
     uid?: string;
     name: string;
+    username: string;
     email: string;
     imageUrl: string;
     bio?: string;
@@ -19,6 +20,7 @@ export interface CreateUserInput {
 
 export interface UpdateUserInput {
     name?: string;
+    username?: string;
     imageUrl?: string;
     bio?: string;
     points?: number;

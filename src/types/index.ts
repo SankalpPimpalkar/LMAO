@@ -7,6 +7,7 @@ export interface User {
         wins: number;
         points: number;
     };
+    bio?: string;
     joinedAt?: string;
 }
 
@@ -39,5 +40,6 @@ export interface Caption {
         avatar: string;
     };
     votes: number;
+    votedByMe?: boolean;
     createdAt: string;
 }

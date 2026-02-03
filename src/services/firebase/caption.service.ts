@@ -23,6 +23,7 @@ import {
 } from "@/types/caption.types";
 import { IBattle } from "@/types/battle.types";
 import { IUser } from "@/types/auth.types";
+import { Caption } from "@/types";
 
 export class CaptionService {
     static #collectionRef = collection(db, "captions");
@@ -41,20 +42,35 @@ export class CaptionService {
     }
 
     static async #createCaption(
-        data: CreateCaptionInput
+        data: { battleId: string; authorId: string; text: string }
     ): Promise<ICaption> {
-        const ref = doc(this.#collectionRef);
+        const battleRef = doc(db, "battles", data.battleId);
+        const authorRef = doc(db, "users", data.authorId);
+        const captionRef = doc(this.#collectionRef);
 
-        const payload: ICaption = {
-            battle: data.battle,
+        const payload: any = {
+            battle: battleRef,
             text: data.text,
-            author: data.author,
+            author: authorRef,
             votes: [],
             createdAt: Timestamp.now()
         };
 
-        await setDoc(ref, payload);
-        return this.#getCaption(ref.id);
+        // Use transaction to ensure caption count stays in sync
+        await runTransaction(db, async (transaction) => {
+            const battleSnap = await transaction.get(battleRef);
+            if (!battleSnap.exists()) {
+                throw new Error("Battle not found");
+            }
+
+            const currentCount = (battleSnap.data() as any).captionCount || 0;
+            transaction.set(captionRef, payload);
+            transaction.update(battleRef, {
+                captionCount: currentCount + 1
+            });
+        });
+
+        return this.#getCaption(captionRef.id);
     }
 
     static async #deleteCaption(
@@ -65,7 +81,7 @@ export class CaptionService {
     }
 
     static async createCaption(
-        data: CreateCaptionInput
+        data: { battleId: string; authorId: string; text: string }
     ): Promise<ICaption> {
         return this.#createCaption(data);
     }
@@ -83,25 +99,51 @@ export class CaptionService {
     }
 
     static async getCaptionsByBattle(
-        battleRef: DocumentReference<IBattle>
-    ): Promise<ICaption[]> {
+        battleRef: DocumentReference,
+        currentUserId?: string
+    ): Promise<{ captions: Caption[]; totalCount: number }> {
         const q = query(
             this.#collectionRef,
             where("battle", "==", battleRef)
         );
 
         const snapshot = await getDocs(q);
+        const currentUserRef = currentUserId ? doc(db, "users", currentUserId) : null;
 
-        return snapshot.docs.map(
-            (doc) => ({ id: doc.id, ...doc.data() }) as ICaption
-        );
+        const captions = await Promise.all(snapshot.docs.map(async (d) => {
+            const data = d.data() as ICaption;
+
+            // Resolve author
+            const authorSnap = await getDoc(data.author as any);
+            const authorData = authorSnap.data() as IUser;
+
+            return {
+                id: d.id,
+                battleId: battleRef.id,
+                text: data.text,
+                author: {
+                    uid: authorSnap.id,
+                    username: authorData?.name?.toLowerCase().replace(/\s+/g, '') || "unknown",
+                    avatar: authorData?.imageUrl || ""
+                },
+                votes: data.votes?.length || 0,
+                votedByMe: currentUserRef ? data.votes?.some(v => v.user.path === currentUserRef.path) : false,
+                createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString()
+            } as Caption;
+        }));
+
+        return {
+            captions,
+            totalCount: snapshot.size
+        };
     }
 
     static async voteCaption(
         captionId: string,
-        userRef: DocumentReference<IUser>
+        userId: string
     ): Promise<void> {
         const captionRef = doc(db, "captions", captionId);
+        const userRef = doc(db, "users", userId);
 
         await runTransaction(db, async (tx) => {
             const snapshot = await tx.get(captionRef);
@@ -110,14 +152,14 @@ export class CaptionService {
             }
 
             const data = snapshot.data() as ICaption;
-            const alreadyVoted = data.votes.some(
+            const alreadyVoted = data.votes?.some(
                 (v) => v.user.path === userRef.path
             );
 
             if (alreadyVoted) return;
 
             const vote: ICaptionVote = {
-                user: userRef,
+                user: userRef as any,
                 votedAt: Timestamp.now(),
             };
 
@@ -129,16 +171,17 @@ export class CaptionService {
 
     static async unvoteCaption(
         captionId: string,
-        userRef: DocumentReference<IUser>
+        userId: string
     ): Promise<void> {
         const captionRef = doc(db, "captions", captionId);
+        const userRef = doc(db, "users", userId);
 
         await runTransaction(db, async (tx) => {
             const snapshot = await tx.get(captionRef);
             if (!snapshot.exists()) return;
 
             const data = snapshot.data() as ICaption;
-            const updatedVotes = data.votes.filter(
+            const updatedVotes = (data.votes || []).filter(
                 (v) => v.user.path !== userRef.path
             );
 

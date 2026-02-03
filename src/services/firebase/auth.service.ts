@@ -28,7 +28,7 @@ import {
 export class AuthService {
     static #googleProvider = new GoogleAuthProvider();
 
-    static async #createUser(data: CreateUserInput): Promise<IUser | null> {
+    static async #createUser(data: CreateUserInput & { username: string }): Promise<IUser | null> {
         const userRef = doc(db, "users", data.uid);
         const existingUser = await getDoc(userRef);
 
@@ -37,7 +37,9 @@ export class AuthService {
         }
 
         const payload: IUser = {
+            uid: data.uid,
             name: data.name,
+            username: data.username,
             email: data.email,
             imageUrl: data.imageUrl,
             points: 0,
@@ -71,17 +73,49 @@ export class AuthService {
         return true;
     }
 
+    static async isUsernameUnique(username: string): Promise<boolean> {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", username));
+        const snapshot = await getDocs(q);
+        return snapshot.empty;
+    }
+
+    static async #generateUniqueUsername(baseName: string): Promise<string> {
+        const normalized = baseName.toLowerCase().replace(/\s+/g, '');
+        let username = normalized;
+        let isUnique = await this.isUsernameUnique(username);
+
+        if (isUnique) return username;
+
+        let suffix = 1;
+        while (!isUnique) {
+            const candidate = `${normalized}${suffix}`;
+            isUnique = await this.isUsernameUnique(candidate);
+            if (isUnique) return candidate;
+            suffix++;
+            if (suffix > 100) break; // Safety break
+        }
+        return `${normalized}${Math.floor(Math.random() * 1000)}`;
+    }
+
     static async signInWithGoogle(): Promise<IUser | null> {
         const { user } = await signInWithPopup(
             auth,
             this.#googleProvider
         );
 
+        // Check if user already exists
+        const existingUser = await this.#getUser(user.uid);
+        if (existingUser) return existingUser;
+
+        const username = await this.#generateUniqueUsername(user.displayName || "user");
+
         return this.#createUser({
             uid: user.uid,
             name: user.displayName || "",
             email: user.email || "",
             imageUrl: user.photoURL || "",
+            username: username
         });
     }
 
@@ -140,5 +174,17 @@ export class AuthService {
         return snapshot.docs.map(
             (doc) => ({ uid: doc.id, ...doc.data() }) as IUser
         );
+    }
+
+    static async getUserByUsername(
+        username: string
+    ): Promise<IUser | null> {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", username));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) return null;
+        const userDoc = snapshot.docs[0];
+        return { uid: userDoc.id, ...userDoc.data() } as IUser;
     }
 }

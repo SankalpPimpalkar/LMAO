@@ -12,10 +12,10 @@ const BattleView = ({ battle }: { battle: Battle }) => {
 
 
             {/* Content Area */}
-            <div className="flex-1 p-4">
+            <div className="flex-1 p-3 md:p-4">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-4">
-                    <Avatar fallback={battle.creator.avatar} className="h-10 w-10 rounded-full ring-1 ring-zinc-800" />
+                    <Avatar src={battle.creator.avatar} fallback={battle.creator.avatar} className="h-10 w-10 rounded-full ring-1 ring-zinc-800" />
                     <div className="flex flex-col">
                         <span className="text-base font-bold text-zinc-100 leading-none">{battle.creator.displayName}</span>
                         <span className="text-sm text-zinc-500 mt-0.5">@{battle.creator.username}</span>
@@ -26,7 +26,7 @@ const BattleView = ({ battle }: { battle: Battle }) => {
                 </div>
 
                 {/* Title */}
-                <h1 className="text-xl md:text-2xl font-medium text-zinc-100 mb-2 leading-snug">{battle.title}</h1>
+                <h1 className="text-lg md:text-2xl font-bold text-zinc-100 mb-2 leading-snug">{battle.title}</h1>
 
                 {/* Main Content */}
                 <div className="mb-4">
@@ -46,7 +46,9 @@ const BattleView = ({ battle }: { battle: Battle }) => {
                 <div className="flex items-center gap-2 text-zinc-500 border-t border-zinc-900 pt-3">
                     <Button variant="ghost" size="sm" className="h-8 text-xs gap-2 text-zinc-400 hover:bg-zinc-800 rounded-sm">
                         <MessageSquare className="h-4 w-4" />
-                        <span className="font-bold">{battle.stats.captionCount} Captions</span>
+                        <span className="font-bold">
+                            {battle.stats.captionCount}
+                        </span>
                     </Button>
                     <Button variant="ghost" size="sm" className="h-8 text-xs gap-2 text-zinc-400 hover:bg-zinc-800 rounded-sm">
                         <Share2 className="h-4 w-4" />

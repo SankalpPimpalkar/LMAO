@@ -24,15 +24,20 @@ export class BattleService {
     static #collectionRef = collection(db, "battles");
 
     static async #createBattle(
-        data: CreateBattleInput
+        data: Omit<CreateBattleInput, "createdBy"> & { createdBy: string }
     ): Promise<IBattle> {
         const battleRef = doc(this.#collectionRef);
+        const userRef = doc(db, "users", data.createdBy);
 
-        const payload: IBattle = {
+        const payload: Record<string, any> = {
             ...data,
+            createdBy: userRef,
             status: "active",
             createdAt: Timestamp.now()
         };
+
+        // Remove undefined fields mainly for optional imageUrl
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
         await setDoc(battleRef, payload);
         return this.#getBattle(battleRef.id);
@@ -69,7 +74,7 @@ export class BattleService {
     }
 
     static async createBattle(
-        data: CreateBattleInput
+        data: Omit<CreateBattleInput, "createdBy"> & { createdBy: string }
     ): Promise<IBattle> {
         return this.#createBattle(data);
     }

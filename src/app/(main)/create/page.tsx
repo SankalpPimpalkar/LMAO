@@ -1,29 +1,85 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ImagePlus, Info, Eye, EyeOff, X } from "lucide-react";
+import { ImagePlus, Info, Eye, EyeOff, X, Loader2 } from "lucide-react";
 import BattleCard from "@/components/BattleCard";
 import { Battle } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { UploadService } from "@/services/upload.service";
+import { BattleService } from "@/services/firebase/battle.service";
+import { Timestamp } from "firebase/firestore";
 
 export default function CreateBattle() {
+    const router = useRouter();
+    const { user } = useAuth();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [image, setImage] = useState<string | null>(null);
+    const [file, setFile] = useState<File | null>(null);
+    const [duration, setDuration] = useState("24"); // hours
     const [previewMode, setPreviewMode] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) {
+            const url = URL.createObjectURL(selectedFile);
             setImage(url);
+            setFile(selectedFile);
         }
     };
 
     const removeImage = () => {
         setImage(null);
+        setFile(null);
+    };
+
+    const handlePost = async () => {
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+        if (!title) {
+            alert("Please provide a title.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            let imageUrl = undefined;
+            // 1. Upload Image (Optional)
+            if (file) {
+                const uploadRes = await UploadService.uploadFile(file);
+                imageUrl = uploadRes.url;
+            }
+
+            // Calculate expiration
+            const durationHours = parseInt(duration);
+            const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
+
+            // 2. Create Battle
+            const newBattle = await BattleService.createBattle({
+                title,
+                description,
+                imageUrl,
+                isPublic: true,
+                duration: `${duration}h`,
+                expiresAt: Timestamp.fromDate(expiresAt),
+                createdBy: user.uid!,
+            });
+
+            // 3. Redirect
+            router.push(`/battles/${newBattle.id}`);
+        } catch (error) {
+            console.error("Failed to create battle:", error);
+            alert("Failed to create post. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Construct a mock battle object for preview
@@ -33,9 +89,9 @@ export default function CreateBattle() {
         description: description,
         image: image || undefined,
         creator: {
-            username: "me",
-            displayName: "Me",
-            avatar: "UI",
+            username: user?.name?.toLowerCase().replace(/\s+/g, '') || "me",
+            displayName: user?.name || "Me",
+            avatar: user?.imageUrl || "UI", // Use user's avatar or fallback
         },
         stats: {
             captionCount: 0,
@@ -125,6 +181,25 @@ export default function CreateBattle() {
                             </div>
                         </div>
 
+                        {/* Duration Selector */}
+                        <div className="bg-zinc-950 rounded-md border border-zinc-800 p-3 md:p-4">
+                            <label className="text-sm font-medium text-zinc-400 mb-3 block">Duration</label>
+                            <div className="flex flex-wrap gap-2">
+                                {["12", "24", "72", "168"].map((hours) => (
+                                    <button
+                                        key={hours}
+                                        onClick={() => setDuration(hours)}
+                                        className={`flex-1 min-w-[70px] px-3 py-2 rounded-full text-[10px] md:text-xs font-bold transition-all ${duration === hours
+                                            ? "bg-zinc-100 text-black border border-zinc-100"
+                                            : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700 hover:text-zinc-300"
+                                            }`}
+                                    >
+                                        {hours === "168" ? "1 Week" : hours === "72" ? "3 Days" : `${hours}h`}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Rules Section */}
                         <Card className="bg-zinc-900 border-zinc-800">
                             <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
@@ -140,8 +215,17 @@ export default function CreateBattle() {
                         </Card>
 
                         <div className="flex justify-end pt-4 border-t border-zinc-800">
-                            <Button className="rounded-full px-8 font-bold bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
-                                Post
+                            <Button
+                                onClick={handlePost}
+                                disabled={isSubmitting}
+                                className="rounded-full px-8 font-bold bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Posting...
+                                    </>
+                                ) : "Post"}
                             </Button>
                         </div>
                     </div>

@@ -12,10 +12,10 @@ const BattleCard = ({ battle }: { battle: Battle }) => {
             <div className="flex">
 
                 {/* Content Area */}
-                <div className="flex-1 p-4 pb-2">
+                <div className="flex-1 p-3 md:p-4 pb-2">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
-                        <Avatar fallback={battle.creator.avatar} className="h-9 w-9 rounded-full ring-1 ring-zinc-800" />
+                        <Avatar src={battle.creator.avatar} fallback={battle.creator.avatar} className="h-9 w-9 rounded-full ring-1 ring-zinc-800" />
                         <div className="flex flex-col">
                             <span className="text-sm font-bold text-zinc-200 leading-none">{battle.creator.displayName}</span>
                             <span className="text-xs text-zinc-500 mt-0.5">@{battle.creator.username}</span>
@@ -26,7 +26,7 @@ const BattleCard = ({ battle }: { battle: Battle }) => {
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-lg font-medium text-zinc-100 mb-1 leading-snug">{battle.title}</h2>
+                    <h2 className="text-base md:text-lg font-bold text-zinc-100 mb-1 leading-snug">{battle.title}</h2>
 
                     {/* Main Content */}
                     <div className="mb-3">
@@ -47,7 +47,9 @@ const BattleCard = ({ battle }: { battle: Battle }) => {
                         <Link href={`/battles/${battle.id}`}>
                             <Button variant="ghost" size="sm" className="h-8 text-xs gap-2 text-zinc-400 hover:bg-zinc-800 rounded-sm">
                                 <MessageSquare className="h-4 w-4" />
-                                <span className="font-bold">{battle.stats.captionCount} Captions</span>
+                                <span className="font-bold">
+                                    {battle.stats.captionCount}
+                                </span>
                             </Button>
                         </Link>
 

@@ -1,24 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Heart, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Caption } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { CaptionService } from "@/services/firebase/caption.service";
 
 const CaptionList = ({ captions }: { captions: Caption[] }) => {
+    const { user } = useAuth();
+    const router = useRouter();
     const [localCaptions, setLocalCaptions] = useState(captions);
 
-    // In a real implementation this would call an API
-    const handleVote = (id: string) => {
+    useEffect(() => {
+        setLocalCaptions(captions);
+    }, [captions]);
+
+    const handleVote = async (id: string) => {
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
+        const caption = localCaptions.find(c => c.id === id);
+        if (!caption) return;
+
+        const alreadyVoted = caption.votedByMe;
+
+        // Optimistic update
         setLocalCaptions(prev => prev.map(c =>
-            c.id === id ? { ...c, votes: c.votes + 1 } : c
+            c.id === id ? {
+                ...c,
+                votes: alreadyVoted ? c.votes - 1 : c.votes + 1,
+                votedByMe: !alreadyVoted
+            } : c
         ));
+
+        try {
+            if (alreadyVoted) {
+                await CaptionService.unvoteCaption(id, user.uid!);
+            } else {
+                await CaptionService.voteCaption(id, user.uid!);
+            }
+        } catch (error) {
+            console.error("Failed to vote:", error);
+            // Revert optimistic update
+            setLocalCaptions(prev => prev.map(c =>
+                c.id === id ? {
+                    ...c,
+                    votes: alreadyVoted ? c.votes + 1 : c.votes - 1,
+                    votedByMe: alreadyVoted
+                } : c
+            ));
+        }
     };
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
             {localCaptions.map((caption, index) => (
                 <div key={caption.id} className="flex gap-3 p-3 rounded-md bg-zinc-900/20 border border-zinc-900 hover:border-zinc-800 transition-colors">
                     {/* Vote Column */}
@@ -27,11 +68,14 @@ const CaptionList = ({ captions }: { captions: Caption[] }) => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleVote(caption.id)}
-                            className="h-8 w-8 text-zinc-500 hover:bg-zinc-800 hover:text-red-500 rounded-full"
+                            className={cn(
+                                "h-8 w-8 rounded-full transition-colors",
+                                caption.votedByMe ? "text-red-500 bg-red-500/10 hover:bg-red-500/20" : "text-zinc-500 hover:bg-zinc-800 hover:text-red-500"
+                            )}
                         >
-                            <Heart className={cn("h-5 w-5", caption.votes > 10 && "fill-current text-red-500")} />
+                            <Heart className={cn("h-5 w-5", caption.votedByMe && "fill-current")} />
                         </Button>
-                        <span className="text-sm font-bold text-zinc-300">{caption.votes}</span>
+                        <span className={cn("text-sm font-bold", caption.votedByMe ? "text-red-500" : "text-zinc-300")}>{caption.votes}</span>
                     </div>
 
                     {/* Content */}
@@ -43,7 +87,7 @@ const CaptionList = ({ captions }: { captions: Caption[] }) => {
                                     <Trophy className="h-3 w-3" /> Leading
                                 </span>
                             )}
-                            <span className="text-xs text-zinc-500">• 4h ago</span>
+                            <span className="text-xs text-zinc-500">• {new Date(caption.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="text-sm text-zinc-100 leading-relaxed">
                             {caption.text}

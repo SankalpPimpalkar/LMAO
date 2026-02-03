@@ -11,6 +11,7 @@ export interface IBattle {
     status: BattleStatus;
     duration?: string;
     expiresAt: Timestamp;
+    captionCount: number;
     createdBy: DocumentReference<IUser>;
     winner?: DocumentReference<IUser>;
     createdAt?: Timestamp;
